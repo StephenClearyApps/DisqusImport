@@ -8,6 +8,7 @@ using System.Xml;
 using System.Xml.Serialization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using Nito.Guids;
 
 namespace DisqusImport
 {
@@ -86,7 +87,7 @@ namespace DisqusImport
             path = path.Trim('_');
 
             // 6) Calculate the V3 URL GUID for the URL.
-            var guid = Nito.Guids.GuidFactory.CreateMd5(Nito.Guids.GuidNamespaces.Url, Utf8.GetBytes(url));
+            var guid = GuidFactory.CreateMd5(GuidNamespaces.Url, Utf8.GetBytes(url));
 
             // 7) Combine the path and lowercase-hyphenated GUID, separated by '-'.
             return path + "-" + guid.ToString("D");
