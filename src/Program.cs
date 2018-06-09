@@ -70,9 +70,17 @@ namespace DisqusImport
                 AuthorName = post.author.name,
                 AuthorEmailMD5 = post.author.email == null ? "" : EmailMd5(post.author.email),
                 AuthorEmailEncrypted = post.author.email == null ? "" : EmailEncrypt(post.author.email, rsa, padding),
-                Message = post.message,
+                Message = ConvertMessage(post.message),
                 Date = post.createdAt,
             };
+        }
+
+        private static string ConvertMessage(string message)
+        {
+            var result = MarkdownConverter.Convert(message);
+            if (result.Contains("<") || result.Contains(">"))
+                Console.WriteLine(result);
+            return result;
         }
 
         private static string EmailEncrypt(string email, RSA rsa, RSAEncryptionPadding padding)
