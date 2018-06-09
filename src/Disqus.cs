@@ -391,6 +391,8 @@ public partial class author {
     
     private string usernameField;
     
+    private string emailField;
+    
     private bool isAnonymousField;
     
     private string idField;
@@ -427,6 +429,16 @@ public partial class author {
         }
         set {
             this.usernameField = value;
+        }
+    }
+    
+    /// <remarks/>
+    public string email {
+        get {
+            return this.emailField;
+        }
+        set {
+            this.emailField = value;
         }
     }
     

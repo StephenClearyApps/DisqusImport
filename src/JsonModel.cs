@@ -19,7 +19,11 @@ namespace DisqusImport
             set => Id = ConvertDisqusId(value);
         }
 
-        public string Name { get; set; }
+        public string AuthorName { get; set; }
+
+        public string AuthorEmailEncrypted { get; set; }
+
+        public string AuthorEmailMD5 { get; set; }
 
         public string Message { get; set; }
 
@@ -38,7 +42,7 @@ namespace DisqusImport
         [JsonConverter(typeof(UnixDateTimeConverter))]
         public DateTime Timestamp => Date;
 
-        public string UserId { get; set; }
+        public string AuthorUserId { get; set; }
 
         public static Guid ConvertDisqusId(string disqusId) => GuidFactory.CreateMd5(DisqusNamespace, Utf8.GetBytes(disqusId));
 

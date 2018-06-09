@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
@@ -54,11 +55,35 @@ namespace DisqusImport
                 DisqusId = post.id1,
                 DiqusParentId = post.parent?.id,
                 PostId = staticmanPostId,
-                UserId = post.author.username == null ? "" : "disqus:" + post.author.username,
-                Name = post.author.name,
+                AuthorUserId = post.author.username == null ? "" : "disqus:" + post.author.username,
+                AuthorName = post.author.name,
+                AuthorEmailMD5 = post.author.email == null ? "" : EmailMd5(post.author.email),
                 Message = post.message,
                 Date = post.createdAt,
             };
+        }
+
+        /// <summary>
+        /// Converts an email string to a Gravatar-compatible MD5 hash. See https://en.gravatar.com/site/implement/hash/
+        /// </summary>
+        private static string EmailMd5(string email)
+        {
+            // 1) Trim leading and trailing space characters.
+            email = email.Trim(' ');
+            if (email == "")
+                return "";
+
+            // 2) Force all characters to lowercase.
+            email = email.ToLowerInvariant();
+
+            // 3) (assumed) UTF8-encode.
+            var bytes = Utf8.GetBytes(email);
+
+            // 4) MD5 hash
+            var hash = Md5.ComputeHash(bytes);
+
+            // 5) (assumed from example) Convert to lowercase hex string.
+            return hash.ToLowercaseHexString();
         }
 
         private static readonly Regex Extension = new Regex(@"\.[A-Za-z]{3}$");
