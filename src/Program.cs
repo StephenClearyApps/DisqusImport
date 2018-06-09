@@ -27,10 +27,9 @@ namespace DisqusImport
                 var threadLookup = data.thread.ToDictionary(x => x.id1, x => x.link);
                 foreach (var threadedPosts in data.post.GroupBy(x => x.thread.id))
                 {
-                    // Use `thread/link` from XML as our Staticman `post_id`
+                    // Use `thread/link` from XML as the basis of our Staticman `post_id`
                     var threadLink = threadLookup[threadedPosts.Key];
-                    var uri = new Uri(threadLink);
-                    var staticmanPostId = GitFilename(Path.ChangeExtension(uri.AbsolutePath, "")).Trim('_');
+                    var staticmanPostId = StaticmanPostId(threadLink);
 
                     foreach (var post in threadedPosts.Where(x => !x.isDeleted))
                     {
@@ -62,7 +61,7 @@ namespace DisqusImport
             };
         }
 
-        private static readonly Regex extension = new Regex(@"\.[A-Za-z0-9_]{3}$");
+        private static readonly Regex Extension = new Regex(@"\.[A-Za-z]{3}$");
 
         private static string StaticmanPostId(string url)
         {
@@ -74,10 +73,10 @@ namespace DisqusImport
             var uri = new Uri(url);
             var path = uri.AbsolutePath;
 
-            // 3) Path: If the path ends with .html or any three-character [A-Za-z0-9_] extension, strip it.
+            // 3) Path: If the path ends with .html or any three-character [A-Za-z] extension, strip it.
             if (path.EndsWith(".html"))
                 path = path.Substring(0, path.Length - 5);
-            else if (extension.IsMatch(path))
+            else if (Extension.IsMatch(path))
                 path = path.Substring(0, path.Length - 4);
 
             // 4) Path: For each UTF-16 code unit, if it's not in the whitelist [A-Za-z0-9-_;.~()], then replace it with _.
