@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Serialization;
+using DisqusImport.Jwk;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Nito.Guids;
@@ -18,6 +19,16 @@ namespace DisqusImport
     {
         static void Main(string[] args)
         {
+            if (!File.Exists("key.public.json"))
+            {
+                Console.WriteLine("Creating key files key.private.json and key.public.json. Be sure to keep your private key private!");
+                var key = (Rsa: RSA.Create(4096), Padding: RSAEncryptionPadding.OaepSHA1);
+                File.WriteAllText("key.private.json", JsonConvert.SerializeObject(key.Rsa.ToJwk(key.Padding, includePrivateKey: true)));
+                File.WriteAllText("key.public.json", JsonConvert.SerializeObject(key.Rsa.ToJwk(key.Padding, includePrivateKey: false)));
+            }
+
+            var (rsa, padding) = JsonConvert.DeserializeObject<RsaJwk>(File.ReadAllText("key.public.json")).ToRSA();
+
             // Note: "post" in the Disqus world is a single comment.
             //   "post" in the Staticman world is a page; this is what Disqus calls a "thread".
 
@@ -38,7 +49,7 @@ namespace DisqusImport
                         if (!Directory.Exists(Path.Combine("raw", staticmanPostId)))
                             Directory.CreateDirectory(Path.Combine("raw", staticmanPostId));
 
-                        var result = Convert(staticmanPostId, post);
+                        var result = Convert(staticmanPostId, post, rsa, padding);
                         var filename = result.Date.ToString("yyyy-MM-dd") + "-" + result.Id.ToString("D") + ".json";
                         File.WriteAllText(Path.Combine("raw", staticmanPostId, filename), JsonConvert.SerializeObject(result, SerializerSettings));
                     }
@@ -48,7 +59,7 @@ namespace DisqusImport
             Console.ReadKey();
         }
 
-        static JsonModel Convert(string staticmanPostId, post post)
+        static JsonModel Convert(string staticmanPostId, post post, RSA rsa, RSAEncryptionPadding padding)
         {
             return new JsonModel
             {
@@ -58,9 +69,22 @@ namespace DisqusImport
                 AuthorUserId = post.author.username == null ? "" : "disqus:" + post.author.username,
                 AuthorName = post.author.name,
                 AuthorEmailMD5 = post.author.email == null ? "" : EmailMd5(post.author.email),
+                AuthorEmailEncrypted = post.author.email == null ? "" : EmailEncrypt(post.author.email, rsa, padding),
                 Message = post.message,
                 Date = post.createdAt,
             };
+        }
+
+        private static string EmailEncrypt(string email, RSA rsa, RSAEncryptionPadding padding)
+        {
+            // 1) Convert to UTF8.
+            var bytes = Utf8.GetBytes(email);
+
+            // 2) Encrypt.
+            var encrypted = rsa.Encrypt(bytes, padding);
+
+            // 3) Base64-encode.
+            return System.Convert.ToBase64String(encrypted);
         }
 
         /// <summary>
