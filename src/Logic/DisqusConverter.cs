@@ -32,7 +32,7 @@ namespace DisqusImport.Logic
                 var threadLink = threadLookup[threadedPosts.Key];
                 var staticmanPostId = StaticmanPostId(threadLink);
 
-                foreach (var post in threadedPosts.Where(x => !x.isDeleted))
+                foreach (var post in threadedPosts.Where(x => !x.isDeleted && !x.isSpam))
                 {
                     // Write out to files that match staticman.yml 'path' and 'filename' settings.
                     if (!Directory.Exists(Path.Combine("raw", staticmanPostId)))
