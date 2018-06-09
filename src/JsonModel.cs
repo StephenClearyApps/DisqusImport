@@ -4,6 +4,7 @@ using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Nito.Guids;
+using static Globals;
 
 namespace DisqusImport
 {
@@ -39,8 +40,7 @@ namespace DisqusImport
 
         public string UserId { get; set; }
 
-        public static Guid ConvertDisqusId(string disqusId) =>
-            GuidFactory.CreateSha1(DisqusNamespace, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false).GetBytes(disqusId));
+        public static Guid ConvertDisqusId(string disqusId) => GuidFactory.CreateSha1(DisqusNamespace, Utf8.GetBytes(disqusId));
 
         private static readonly Guid DisqusNamespace = Guid.Parse("23F48135-168C-4769-8D5C-4693E3F80E03");
     }

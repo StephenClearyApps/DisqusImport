@@ -9,6 +9,7 @@ using System.Xml.Serialization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Nito.Guids;
+using static Globals;
 
 namespace DisqusImport
 {
@@ -62,7 +63,6 @@ namespace DisqusImport
         }
 
         private static readonly Regex extension = new Regex(@"\.[A-Za-z0-9_]{3}$");
-        private static readonly Encoding Utf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 
         private static string StaticmanPostId(string url)
         {
