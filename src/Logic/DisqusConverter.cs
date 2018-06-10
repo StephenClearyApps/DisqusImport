@@ -45,7 +45,7 @@ namespace DisqusImport.Logic
             }
         }
 
-        private static readonly Regex Extension = new Regex(@"\.[A-Za-z]{3}$");
+        private static readonly Regex Extension = new Regex(@"\.[A-Za-z0-9]{2,6}$");
 
         private static string StaticmanPostId(string url)
         {
@@ -57,7 +57,7 @@ namespace DisqusImport.Logic
             var uri = new Uri(url);
             var path = uri.AbsolutePath;
 
-            // 3) Path: If the path ends with .html or any three-character [A-Za-z] extension, strip it.
+            // 3) Path: If the path ends with .html or any two- to six-character [A-Za-z0-9] extension, strip it.
             if (path.EndsWith(".html"))
                 path = path.Substring(0, path.Length - 5);
             else if (Extension.IsMatch(path))
