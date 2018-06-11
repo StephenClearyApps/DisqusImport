@@ -4,15 +4,11 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Serialization;
 using DisqusImport.Jwk;
 using DisqusImport.Logic;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
-using Nito.Guids;
-using static Globals;
 
 namespace DisqusImport
 {
@@ -35,10 +31,40 @@ namespace DisqusImport
             using (var reader = XmlReader.Create("disqus.xml"))
             {
                 var data = (disqus)ser.Deserialize(reader);
+                Preprocess(data);
                 converter.Convert(data);
             }
             Console.WriteLine("Done.");
             Console.ReadKey();
+        }
+
+        private static void Preprocess(disqus data)
+        {
+            foreach (var post in data.post)
+            {
+                if (post.author.email != null && (post.author.email.EndsWith(".disqus.net", StringComparison.InvariantCultureIgnoreCase) ||
+                                                  (post.author.email.StartsWith("anonymized", StringComparison.InvariantCultureIgnoreCase) && post.author.email.EndsWith("disqus.com", StringComparison.InvariantCultureIgnoreCase))))
+                {
+                    if (post.author.email.Contains("cleary", StringComparison.InvariantCultureIgnoreCase))
+                        post.author.email = "honeypot.ourteddybear@xoxy.net";
+                    else
+                        post.author.email = null;
+                }
+                else if (post.author.email == "disqus.ourteddybear@xoxy.net")
+                {
+                    post.author.email = "honeypot.ourteddybear@xoxy.net";
+                }
+                //else if (post.author.email != null && (post.author.email.Contains("disqus", StringComparison.InvariantCultureIgnoreCase) || post.author.email.Contains("cleary", StringComparison.InvariantCultureIgnoreCase)))
+                //{
+                //    Console.WriteLine(post.author.email);
+                //}
+
+                if (post.author.name == "Stephen Cleary, Nito Programs")
+                    post.author.name = "Stephen Cleary";
+
+                if (post.author.name.Contains("cleary", StringComparison.InvariantCultureIgnoreCase) && post.author.name != "Stephen Cleary")
+                    Console.WriteLine(post.author.name);
+            }
         }
     }
 }
