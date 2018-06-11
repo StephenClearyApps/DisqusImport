@@ -60,8 +60,8 @@ namespace DisqusImport.Logic
             // 3) Path: If the path ends with .html or any two- to six-character [A-Za-z0-9] extension, strip it.
             if (path.EndsWith(".html"))
                 path = path.Substring(0, path.Length - 5);
-            else if (Extension.IsMatch(path))
-                path = path.Substring(0, path.Length - 4);
+            else
+                path = Extension.Replace(path, "");
 
             // 4) Path: For each UTF-16 code unit, if it's not in the whitelist [A-Za-z0-9-_;.~()], then replace it with _.
             path = GitFilename(path);
