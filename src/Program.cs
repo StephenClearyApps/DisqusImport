@@ -24,15 +24,16 @@ namespace DisqusImport
                 File.WriteAllText("key.public.json", JsonConvert.SerializeObject(rsa.ToJwk(padding, includePrivateKey: false)));
             }
 
-            var key = JsonConvert.DeserializeObject<RsaJwk>(File.ReadAllText("key.public.json")).ToRSA();
-            var converter = new DisqusConverter(key);
+            var publicKey = JsonConvert.DeserializeObject<RsaJwk>(File.ReadAllText("key.public.json")).ToRSA();
+            var privateKey = JsonConvert.DeserializeObject<RsaJwk>(File.ReadAllText("key.private.json")).ToRSA();
+            var converter = new DisqusConverter(publicKey, privateKey);
 
             var ser = new XmlSerializer(typeof(disqus));
             using (var reader = XmlReader.Create("disqus.xml"))
             {
                 var data = (disqus)ser.Deserialize(reader);
                 Preprocess(data);
-                converter.Convert(data);
+                converter.Import(data);
             }
             Console.WriteLine("Done.");
             Console.ReadKey();

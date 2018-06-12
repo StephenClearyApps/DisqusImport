@@ -13,11 +13,11 @@ namespace DisqusImport.Logic
     public sealed class DisqusCommentConverter
     {
         private static readonly Regex AnchorFixer = new Regex(@"<a href=""([^""]+)"" rel=""[^""]+"" title=""[^""]+"">([^<]+)</a>");
-        private readonly (RSA Rsa, RSAEncryptionPadding Padding) _key;
+        private readonly (RSA Rsa, RSAEncryptionPadding Padding) _publicKey;
 
-        public DisqusCommentConverter((RSA Rsa, RSAEncryptionPadding Padding) key)
+        public DisqusCommentConverter((RSA Rsa, RSAEncryptionPadding Padding) publicKey)
         {
-            _key = key;
+            _publicKey = publicKey;
         }
 
         public JsonModel Convert(string staticmanPostId, post post)
@@ -62,7 +62,7 @@ namespace DisqusImport.Logic
             var bytes = Utf8.GetBytes(email);
 
             // 2) Encrypt.
-            var encrypted = _key.Rsa.Encrypt(bytes, _key.Padding);
+            var encrypted = _publicKey.Rsa.Encrypt(bytes, _publicKey.Padding);
 
             // 3) Base64-encode.
             return System.Convert.ToBase64String(encrypted);

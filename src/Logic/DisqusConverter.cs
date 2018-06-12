@@ -13,14 +13,16 @@ namespace DisqusImport.Logic
 {
     public sealed class DisqusConverter
     {
+        private readonly (RSA Rsa, RSAEncryptionPadding Padding) _privateKey;
         private readonly DisqusCommentConverter _commentConverter;
 
-        public DisqusConverter((RSA Rsa, RSAEncryptionPadding Padding) key)
+        public DisqusConverter((RSA Rsa, RSAEncryptionPadding Padding) publicKey, (RSA Rsa, RSAEncryptionPadding Padding) privateKey)
         {
-            _commentConverter = new DisqusCommentConverter(key);
+            _privateKey = privateKey;
+            _commentConverter = new DisqusCommentConverter(publicKey);
         }
 
-        public void Convert(disqus data)
+        public void Import(disqus data)
         {
             // Note: "post" in the Disqus world is a single comment.
             //   "post" in the Staticman world is a page; this is what Disqus calls a "thread".
@@ -40,7 +42,19 @@ namespace DisqusImport.Logic
 
                     var result = _commentConverter.Convert(staticmanPostId, post);
                     var filename = result.Date.ToString("yyyy-MM-dd") + "-" + result.Id.ToString("D") + ".json";
-                    File.WriteAllText(Path.Combine("raw", staticmanPostId, filename), JsonConvert.SerializeObject(result, SerializerSettings));
+                    var path = Path.Combine("raw", staticmanPostId, filename);
+                    if (File.Exists(path))
+                    {
+                        var old = JsonConvert.DeserializeObject<JsonModel>(File.ReadAllText(path));
+                        var oldEmail = old.AuthorEmailEncrypted == "" ? null :
+                            Utf8.GetString(_privateKey.Rsa.Decrypt(Convert.FromBase64String(old.AuthorEmailEncrypted), _privateKey.Padding));
+                        var newEmail = result.AuthorEmailEncrypted == "" ? null :
+                            Utf8.GetString(_privateKey.Rsa.Decrypt(Convert.FromBase64String(result.AuthorEmailEncrypted), _privateKey.Padding));
+                        if (oldEmail == newEmail)
+                            result.AuthorEmailEncrypted = old.AuthorEmailEncrypted;
+                    }
+
+                    File.WriteAllText(path, JsonConvert.SerializeObject(result, SerializerSettings));
                 }
             }
         }
