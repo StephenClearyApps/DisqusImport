@@ -31,6 +31,7 @@ namespace DisqusImport.Logic
                 AuthorName = post.author.name,
                 AuthorEmailMD5 = post.author.email == null ? "" : EmailMd5(post.author.email),
                 AuthorEmailEncrypted = post.author.email == null ? "" : EmailEncrypt(post.author.email),
+                AuthorUri = post.author.link ?? "",
                 Message = ConvertMessage(post.message),
                 Date = post.createdAt,
             };
