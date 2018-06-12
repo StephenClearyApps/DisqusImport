@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using static Globals;
 
 namespace DisqusImport.Logic
@@ -11,6 +12,7 @@ namespace DisqusImport.Logic
     /// </summary>
     public sealed class DisqusCommentConverter
     {
+        private static readonly Regex AnchorFixer = new Regex(@"<a href=""([^""]+)"" rel=""[^""]+"" title=""[^""]+"">([^<]+)</a>");
         private readonly (RSA Rsa, RSAEncryptionPadding Padding) _key;
 
         public DisqusCommentConverter((RSA Rsa, RSAEncryptionPadding Padding) key)
@@ -29,9 +31,26 @@ namespace DisqusImport.Logic
                 AuthorName = post.author.name,
                 AuthorEmailMD5 = post.author.email == null ? "" : EmailMd5(post.author.email),
                 AuthorEmailEncrypted = post.author.email == null ? "" : EmailEncrypt(post.author.email),
-                Message = MarkdownConverter.Convert(post.message),
+                Message = ConvertMessage(post.message),
                 Date = post.createdAt,
             };
+        }
+
+        private static string ConvertMessage(string message)
+        {
+            // Strip a@title attributes (which don't work with showdown), and undo Disqus link shortening.
+            var html = AnchorFixer.Replace(message, match =>
+            {
+                if (match.Groups[2].Value.EndsWith("..."))
+                {
+                    var shortened = match.Groups[2].Value.Substring(0, match.Groups[2].Value.Length - 3);
+                    if (match.Groups[1].Value.StartsWith(shortened))
+                        return $"<a href=\"{match.Groups[1].Value}\">{match.Groups[1].Value}</a>";
+                }
+
+                return $"<a href=\"{match.Groups[1].Value}\">{match.Groups[2].Value}</a>";
+            });
+            return MarkdownConverter.Convert(html);
         }
 
         /// <summary>
