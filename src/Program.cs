@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Serialization;
 using DisqusImport.Jwk;
@@ -14,7 +15,7 @@ namespace DisqusImport
 {
     class Program
     {
-        static void Main(string[] args)
+        static async Task Main()
         {
             if (!File.Exists("key.public.json"))
             {
@@ -25,15 +26,14 @@ namespace DisqusImport
             }
 
             var publicKey = JsonConvert.DeserializeObject<RsaJwk>(File.ReadAllText("key.public.json")).ToRSA();
-            var privateKey = JsonConvert.DeserializeObject<RsaJwk>(File.ReadAllText("key.private.json")).ToRSA();
-            var converter = new DisqusConverter(publicKey, privateKey);
+            var converter = new DisqusConverter(File.ReadAllText("disqusapi.access_token.txt"), File.ReadAllText("disqusapi.api_key.txt"), publicKey);
 
             var ser = new XmlSerializer(typeof(disqus));
             using (var reader = XmlReader.Create("disqus.xml"))
             {
                 var data = (disqus)ser.Deserialize(reader);
                 Preprocess(data);
-                converter.Import(data);
+                await converter.ConvertAsync(data);
             }
             Console.WriteLine("Done.");
             Console.ReadKey();

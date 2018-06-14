@@ -29,6 +29,8 @@ namespace DisqusImport
 
         public string AuthorUserId { get; set; }
 
+        public string AuthorFallbackAvatar { get; set; }
+
         public string Message { get; set; }
 
         public string PostId { get; set; }

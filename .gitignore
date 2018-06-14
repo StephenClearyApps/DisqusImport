@@ -329,3 +329,5 @@ ASALocalRun/
 # MFractors (Xamarin productivity tool) working folder 
 .mfractor/
 disqus.xml
+/src/disqusapi.access_token.txt
+/src/disqusapi.api_key.txt

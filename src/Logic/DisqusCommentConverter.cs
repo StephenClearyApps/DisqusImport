@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using static Globals;
 
 namespace DisqusImport.Logic
@@ -13,27 +13,31 @@ namespace DisqusImport.Logic
     public sealed class DisqusCommentConverter
     {
         private static readonly Regex AnchorFixer = new Regex(@"<a href=""([^""]+)"" rel=""[^""]+"" title=""[^""]+"">([^<]+)</a>");
-        private readonly (RSA Rsa, RSAEncryptionPadding Padding) _publicKey;
+        private readonly DisqusAuthorConverter _authorConverter;
 
-        public DisqusCommentConverter((RSA Rsa, RSAEncryptionPadding Padding) publicKey)
+        public DisqusCommentConverter(DisqusAuthorConverter authorConverter)
         {
-            _publicKey = publicKey;
+            _authorConverter = authorConverter;
         }
 
-        public JsonModel Convert(string staticmanPostId, post post)
+        public string Filename(post post) => post.createdAt.Date.ToString("yyyy-MM-dd") + "-" + JsonModel.ConvertDisqusId(post.id1).ToString("D") + ".json";
+
+        public async Task<JsonModel> ConvertAsync(string staticmanPostId, post post, string path)
         {
+            var author = await _authorConverter.ConvertAsync(path, post);
             return new JsonModel
             {
                 DisqusId = post.id1,
                 DiqusParentId = post.parent?.id,
                 PostId = staticmanPostId,
-                AuthorUserId = post.author.username == null ? "" : "disqus:" + post.author.username,
-                AuthorName = post.author.name,
-                AuthorEmailMD5 = post.author.email == null ? "" : EmailMd5(post.author.email),
-                AuthorEmailEncrypted = post.author.email == null ? "" : EmailEncrypt(post.author.email),
-                AuthorUri = post.author.link ?? "",
                 Message = ConvertMessage(post.message),
                 Date = post.createdAt,
+                AuthorUserId = author.Username == null ? "" : "disqus:" + author.Username,
+                AuthorName = author.Name ?? "",
+                AuthorEmailMD5 = author.HashedEmail ?? "",
+                AuthorEmailEncrypted = author.EncryptedEmail ?? "",
+                AuthorUri = author.Url ?? "",
+                AuthorFallbackAvatar = author.FallbackAvatar ?? "",
             };
         }
 
@@ -52,44 +56,6 @@ namespace DisqusImport.Logic
                 return $"<a href=\"{match.Groups[1].Value}\">{match.Groups[2].Value}</a>";
             });
             return MarkdownConverter.Convert(html);
-        }
-
-        /// <summary>
-        /// Encrypts an email string.
-        /// </summary>
-        private string EmailEncrypt(string email)
-        {
-            // 1) Convert to UTF8.
-            var bytes = Utf8.GetBytes(email);
-
-            // 2) Encrypt.
-            var encrypted = _publicKey.Rsa.Encrypt(bytes, _publicKey.Padding);
-
-            // 3) Base64-encode.
-            return System.Convert.ToBase64String(encrypted);
-        }
-
-        /// <summary>
-        /// Converts an email string to a Gravatar-compatible MD5 hash. See https://en.gravatar.com/site/implement/hash/
-        /// </summary>
-        private static string EmailMd5(string email)
-        {
-            // 1) Trim leading and trailing space characters.
-            email = email.Trim(' ');
-            if (email == "")
-                return "";
-
-            // 2) Force all characters to lowercase.
-            email = email.ToLowerInvariant();
-
-            // 3) (assumed) UTF8-encode.
-            var bytes = Utf8.GetBytes(email);
-
-            // 4) MD5 hash
-            var hash = Md5.ComputeHash(bytes);
-
-            // 5) (assumed from example) Convert to lowercase hex string.
-            return hash.ToLowercaseHexString();
         }
     }
 }

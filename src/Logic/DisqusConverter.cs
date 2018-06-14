@@ -5,6 +5,8 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using DisqusImport.Logic.Authors;
 using Newtonsoft.Json;
 using Nito.Guids;
 using static Globals;
@@ -13,16 +15,15 @@ namespace DisqusImport.Logic
 {
     public sealed class DisqusConverter
     {
-        private readonly (RSA Rsa, RSAEncryptionPadding Padding) _privateKey;
         private readonly DisqusCommentConverter _commentConverter;
 
-        public DisqusConverter((RSA Rsa, RSAEncryptionPadding Padding) publicKey, (RSA Rsa, RSAEncryptionPadding Padding) privateKey)
+        public DisqusConverter(string accessToken, string apiKey, (RSA Rsa, RSAEncryptionPadding Padding) publicKey)
         {
-            _privateKey = privateKey;
-            _commentConverter = new DisqusCommentConverter(publicKey);
+            var authorConverter = new DisqusAuthorConverter(new DisqusApi(accessToken, apiKey), new ApiCache(), publicKey);
+            _commentConverter = new DisqusCommentConverter(authorConverter);
         }
 
-        public void Import(disqus data)
+        public async Task ConvertAsync(disqus data)
         {
             // Note: "post" in the Disqus world is a single comment.
             //   "post" in the Staticman world is a page; this is what Disqus calls a "thread".
@@ -40,19 +41,11 @@ namespace DisqusImport.Logic
                     if (!Directory.Exists(Path.Combine("raw", staticmanPostId)))
                         Directory.CreateDirectory(Path.Combine("raw", staticmanPostId));
 
-                    var result = _commentConverter.Convert(staticmanPostId, post);
-                    var filename = result.Date.ToString("yyyy-MM-dd") + "-" + result.Id.ToString("D") + ".json";
+                    // Load existing file if it already exists.
+                    var filename = _commentConverter.Filename(post);
                     var path = Path.Combine("raw", staticmanPostId, filename);
-                    if (File.Exists(path))
-                    {
-                        var old = JsonConvert.DeserializeObject<JsonModel>(File.ReadAllText(path));
-                        var oldEmail = old.AuthorEmailEncrypted == "" ? null :
-                            Utf8.GetString(_privateKey.Rsa.Decrypt(Convert.FromBase64String(old.AuthorEmailEncrypted), _privateKey.Padding));
-                        var newEmail = result.AuthorEmailEncrypted == "" ? null :
-                            Utf8.GetString(_privateKey.Rsa.Decrypt(Convert.FromBase64String(result.AuthorEmailEncrypted), _privateKey.Padding));
-                        if (oldEmail == newEmail)
-                            result.AuthorEmailEncrypted = old.AuthorEmailEncrypted;
-                    }
+
+                    var result = await _commentConverter.ConvertAsync(staticmanPostId, post, path);
 
                     File.WriteAllText(path, JsonConvert.SerializeObject(result, SerializerSettings));
                 }

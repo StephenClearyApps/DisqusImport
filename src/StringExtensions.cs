@@ -10,5 +10,7 @@ namespace DisqusImport
     public static class StringExtensions
     {
         public static string ToLowercaseHexString(this IEnumerable<byte> bytes) => string.Join("", bytes.Select(x => x.ToString("x2")));
+
+        public static string NullIfEmpty(this string input) => input == "" ? null : input;
     }
 }
