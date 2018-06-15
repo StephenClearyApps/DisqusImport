@@ -46,16 +46,8 @@ namespace DisqusImport
                 if (post.author.email != null && (post.author.email.EndsWith(".disqus.net", StringComparison.InvariantCultureIgnoreCase) ||
                                                   (post.author.email.StartsWith("anonymized", StringComparison.InvariantCultureIgnoreCase) && post.author.email.EndsWith("disqus.com", StringComparison.InvariantCultureIgnoreCase))))
                 {
-                    if (post.author.email.Contains("cleary", StringComparison.InvariantCultureIgnoreCase))
-                        post.author.email = "disqus.ourteddybear@xoxy.net";
-                    else
-                        post.author.email = null;
+                    post.author.email = null;
                 }
-                if (post.author.username == "stephen_cleary")
-                    post.author.email = "disqus.ourteddybear@xoxy.net";
-
-                if (post.author.name == "Stephen Cleary, Nito Programs")
-                    post.author.name = "Stephen Cleary";
             }
         }
     }

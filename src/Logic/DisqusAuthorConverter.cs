@@ -24,7 +24,7 @@ namespace DisqusImport.Logic
 
         public async Task<AuthorDetails> ConvertAsync(string filename, post post)
         {
-            if (post.author.email == "disqus.ourteddybear@xoxy.net")
+            if (post.author.email == "disqus.ourteddybear@xoxy.net" || post.author.username == "stephen_cleary")
                 return Owner;
 
             var postId = post.id1;
