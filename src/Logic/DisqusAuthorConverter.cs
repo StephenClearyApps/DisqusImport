@@ -24,6 +24,9 @@ namespace DisqusImport.Logic
 
         public async Task<AuthorDetails> ConvertAsync(string filename, post post)
         {
+            if (post.author.email == "disqus.ourteddybear@xoxy.net")
+                return Owner;
+
             var postId = post.id1;
             var postAuthorData = XmlAuthorData.Create(_publicKey, post);
             var apiAuthorData = _cache.TryGetByHashedEmail(postAuthorData.HashedEmail) ?? _cache.TryGetByUsername(postAuthorData.Username) ?? _cache.TryGetByPostId(postId);
@@ -61,5 +64,12 @@ namespace DisqusImport.Logic
                 Username = json.AuthorUserId.NullIfEmpty() != null && json.AuthorUserId.StartsWith("disqus:") ? json.AuthorUserId.Substring(7) : null,
             };
         }
+
+        private static readonly AuthorDetails Owner = new AuthorDetails
+        {
+            Name = "Stephen Cleary",
+            HashedEmail = "3db7b6e14d9da42751e4bab03bc4d034",
+            Url = "https://stephencleary.com/"
+        };
     }
 }
